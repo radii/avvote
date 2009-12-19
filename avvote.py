@@ -28,12 +28,45 @@ def g_pow_x_mod_G(g, x, G):
         g %= G
     return g
 
+def extended_gcd(a, b):
+    x = 0
+    lastx = 1
+    y = 1
+    lasty = 0
+    while b != 0:
+	q = a / b
+	t = b
+	b = a % b
+	a = t
+
+	t = x
+	x = lastx - q * x
+	lastx = t
+
+	t = y
+	y = lasty - q * y
+	lasty = t
+    return (lastx, lasty, a)
+
+def mult_inv(x, G):
+    "Returns the multiplicative inverse of x mod G"
+    r = extended_gcd(x, G)[0]
+    if r < 0:
+        r = G + r
+    return r
+
+assert(mult_inv(14, 23) == 5)
+assert(mult_inv(5, 23) == 14)
+
+def div(a, b, G):
+    "Returns a / b (mod G)."
+    return (a * mult_inv(b, G)) % G
 def zero_k(x):
     # XXX need a zero knowledge proof
     return 0
 
 def check_zk(x):
-    return true # XXX
+    return True # XXX
 
 def product(L):
     reduce(lambda a,b: a*b, L)
@@ -55,15 +88,30 @@ def vote(v, me, n):
         (gxi, zxi) = eval(r)
         gxa.append(gxi)
         zxa.append(zxi)
+        if not check_zk(zxi):
+            die("ZK proof failed to check out")
 
     if len(gxa) != n:
         print "got %d inputs, expected %d" % (len(gxa), n)
-        return false
-    if gxa[me] != gx:
+        return False
+    if gxa[me-1] != gx:
         print "wrong self value on input, expected:\n0x%x\ngot:\n0x%x" % (
                 gx, gxa[me])
-        return false
+        return False
 
     pgxa = product(gxa[:me-1])
     pgxb = product(gxa[me:])
     
+    gy = div(pgxa, pgxb, G)
+
+    gxyv = (g_pow_x_mod_G(gy, x, G) * g_pow_x_mod_G(g, v, G)) % G
+
+    print "round 2, voter %d:" % me
+    print "0x%x" % gxyv
+    return True
+
+if sys.argv[1] == "vote":
+    v = int(sys.argv[2])
+    n = int(sys.argv[3])
+    me = int(sys.argv[4])
+    vote(v, me, n)
