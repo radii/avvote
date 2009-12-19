@@ -5,7 +5,7 @@
 # Feng Hao and Peter Ryan Piotr Zieliski
 # http://sites.google.com/site/haofeng662/OpenVote_final.pdf?attredirects=0
 
-import struct
+import struct, sys
 
 # from https://git.torproject.org/checkout/tor/master/doc/spec/tor-spec.txt
 G = 0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE65381FFFFFFFFFFFFFFFF
@@ -32,14 +32,38 @@ def zero_k(x):
     # XXX need a zero knowledge proof
     return 0
 
-def vote(v):
+def check_zk(x):
+    return true # XXX
+
+def product(L):
+    reduce(lambda a,b: a*b, L)
+
+def vote(v, me, n):
     x = rand(512/8)
 
     # round 1: fight
-    g_x = g_pow_x_mod_G(g, x, G)
-    zx  = zero_k(x)
+    gx = g_pow_x_mod_G(g, x, G)
+    zx = zero_k(x)
 
-    print "round 1:"
-    print "g^x  = %x" % g_x
-    print "z(x) = %x" % zx
+    print "round 1, voter %d:" % me
+    print "(0x%x,0x%x)" % (gx, zx)
 
+    (gxa, zxa) = ([], [])
+    for i in xrange(1, n+1):
+        print "voter %d:" % i,
+        r = sys.stdin.readline()
+        (gxi, zxi) = eval(r)
+        gxa.append(gxi)
+        zxa.append(zxi)
+
+    if len(gxa) != n:
+        print "got %d inputs, expected %d" % (len(gxa), n)
+        return false
+    if gxa[me] != gx:
+        print "wrong self value on input, expected:\n0x%x\ngot:\n0x%x" % (
+                gx, gxa[me])
+        return false
+
+    pgxa = product(gxa[:me-1])
+    pgxb = product(gxa[me:])
+    
