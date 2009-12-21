@@ -34,18 +34,16 @@ def extended_gcd(a, b):
     y = 1
     lasty = 0
     while b != 0:
-	q = a / b
-	t = b
-	b = a % b
-	a = t
-
-	t = x
-	x = lastx - q * x
-	lastx = t
-
-	t = y
-	y = lasty - q * y
-	lasty = t
+        q = a / b
+        t = b
+        b = a % b
+        a = t
+        t = x
+        x = lastx - q * x
+        lastx = t
+        t = y
+        y = lasty - q * y
+        lasty = t
     return (lastx, lasty, a)
 
 def mult_inv(x, G):
