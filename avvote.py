@@ -67,7 +67,7 @@ def check_zk(x):
     return True # XXX
 
 def product(L):
-    reduce(lambda a,b: a*b, L)
+    return reduce(lambda a,b: a*b, L, 1)
 
 def vote(v, me, n):
     x = rand(512/8)
