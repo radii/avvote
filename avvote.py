@@ -59,6 +59,7 @@ assert(mult_inv(5, 23) == 14)
 def div(a, b, G):
     "Returns a / b (mod G)."
     return (a * mult_inv(b, G)) % G
+
 def zero_k(x):
     # XXX need a zero knowledge proof
     return 0
@@ -99,7 +100,7 @@ def vote(v, me, n):
 
     pgxa = product(gxa[:me-1])
     pgxb = product(gxa[me:])
-    
+
     gy = div(pgxa, pgxb, G)
 
     gxyv = (g_pow_x_mod_G(gy, x, G) * g_pow_x_mod_G(g, v, G)) % G
