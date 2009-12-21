@@ -1,0 +1,21 @@
+AV-Vote -- an anonymous electronic voting system
+
+1. What is it?
+
+avvote is a Python implementation of "Anonymous Voting by 2-Round Public
+Discussion", by Feng Hao, Peter Ryan, and Piotr Zielinski.
+http://sites.google.com/site/haofeng662/OpenVote_final.pdf
+(or see copy included in this git repository.)
+
+The eventual goal is to make this into a usable voting system, with a
+peer-to-peer backend, PGP integration, and possibly Ka-Ping Yee's Pvote
+pre-rendered ballot system -- http://pvote.org/
+
+2. What assumptions are made?
+
+ - You must have a working /dev/urandom.  All modern Linux (2.6.9 and
+   later) and BSD systems should be fine.
+
+3. How do you use it?
+
+
