@@ -104,9 +104,24 @@ def vote(v, me, n):
     gy = div(pgxa, pgxb, G)
 
     gxyv = (g_pow_x_mod_G(gy, x, G) * g_pow_x_mod_G(g, v, G)) % G
+    zv = zero_k(v)
 
     print "round 2, voter %d:" % me
-    print "0x%x" % gxyv
+    print "(0x%x,0x%x)" % (gxyv, zv)
+    (votes, zvs) = ([], [])
+    for i in xrange(1, n+1):
+        print "voter %d:" % i,
+        r = sys.stdin.readline()
+        (gxyvi, zvi) = eval(r)
+        votes.append(gxyvi)
+        zvs.append(zvi)
+        if not check_zk(zvi):
+            die("ZK proof failed to check out: %r" % zvi)
+
+    p = product(votes) % G
+    for i in xrange(0, n + 3):
+        if p == g_pow_x_mod_G(g, i, G):
+            print "Vote total: %d" % i
     return True
 
 if sys.argv[1] == "vote":
