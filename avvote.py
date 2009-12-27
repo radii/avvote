@@ -14,7 +14,7 @@ g = 2
 def memtol(s):
     "Given a string of bytes, returns the big-endian bignum value."
     r = 0
-    for x in struct.unpack('%dB' % n, s):
+    for x in struct.unpack('%dB' % len(s), s):
         r = r * 256 + x
     return r
 
