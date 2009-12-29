@@ -176,8 +176,9 @@ def vote(v, me, n):
             print "Vote total: %d" % i
     return True
 
-if sys.argv[1] == "vote":
-    v = int(sys.argv[2])
-    n = int(sys.argv[3])
-    me = int(sys.argv[4])
-    vote(v, me, n)
+if __name__ == '__main__':
+    if sys.argv[1] == "vote":
+        v = int(sys.argv[2])
+        n = int(sys.argv[3])
+        me = int(sys.argv[4])
+        vote(v, me, n)
