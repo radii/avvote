@@ -22,15 +22,33 @@ def rand(n):
     return memtol(open('/dev/urandom').read(n))
 
 def g_pow_x_mod_G(g, x, G):
-    g0 = g
     if x == 0: return 1
-    while x > 1:
-        g *= g
-        if x & 1:
+    g0 = g
+    i = 1
+    while i <= x:
+        i <<= 1
+    i >>= 1
+    assert(x&i == i)
+    assert(x^i < x)
+    g = 1
+    while i > 0:
+        if x & i:
             g *= g0
-        x >>= 1
-        g %= G
+        i >>= 1
+        if i: g = g * g % G
     return g
+
+m = 2**257-1
+for i in range(256):
+    x = g_pow_x_mod_G(2, i, m)
+    y = 2**i
+    if x != y:
+        raise "i = %d, %d != %d" % (i, x, y)
+
+m = m*m
+for j in (2,3,4,7,8,9,23,56,590,591,592,593,594):
+    for i in range(256):
+        x = g_pow_x_mod_G(i, j, m)
 
 def extended_gcd(a, b):
     x = 0
