@@ -24,10 +24,9 @@ def rand(n):
 def g_pow_x_mod_G(g, x, G):
     if x == 0: return 1
     g0 = g
-    i = 1
-    while i <= x:
-        i <<= 1
-    i >>= 1
+    i = x
+    while i & i-1:
+        i &= i-1
     assert(x&i == i)
     assert(x^i < x)
     g = 1
