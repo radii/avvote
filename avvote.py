@@ -21,9 +21,11 @@ def memtol(s):
 def rand(n):
     return memtol(open('/dev/urandom').read(n))
 
-def g_pow_x_mod_G(g, x, G):
+def g_pow_x_mod_G(g, x, G, debugpow = 0):
     if x == 0: return 1
     g0 = g
+    # find the high bit of x, using the fact that x&(x-1) is
+    # "x with its lowest 1 bit turned to 0".
     i = x
     while i & i-1:
         i &= i-1
@@ -31,11 +33,12 @@ def g_pow_x_mod_G(g, x, G):
     assert(x^i < x)
     g = 1
     while i > 0:
+        if debugpow: print 'i=%x g=%d' % (i, g)
         if x & i:
             g *= g0
         i >>= 1
         if i: g = g * g % G
-    return g
+    return g % G
 
 m = 2**257-1
 for i in range(256):
@@ -48,6 +51,7 @@ m = m*m
 for j in (2,3,4,7,8,9,23,56,590,591,592,593,594):
     for i in range(256):
         x = g_pow_x_mod_G(i, j, m)
+        assert x == (i ** j) % m, raise 'x=%d; i=%d; j=%d; m=%d' % (x,i,j,m)
 
 def extended_gcd(a, b):
     x = 0
@@ -87,15 +91,17 @@ def sha(s):
 
 def sig_schnorr(g, x, G, i):
     "Schnorr's signature."
-    v = rand(512/8) % G
+    G_1 = G-1
+    v = rand(512/8) % G_1
     gv = g_pow_x_mod_G(g, v, G)
     gx = g_pow_x_mod_G(g, x, G)
     h = sha(','.join(map(str, (g, gv, gx, i))))
     z = memtol(h)
-    r = v - (x * z) % G
-    if r < 0:
-        r += G
-    print "x=%d;v=%d;z=%d;r=%d;gv=%d;gx=%d" % (x,v,z,r,gv,gx)
+    r = (v - (x * z)) % G_1
+    debugpow = 0
+    if debugpow: print "x=%d;v=%d;z=%d;r=%d;gv=%d;gx=%d" % (x,v,z,r,gv,gx)
+    assert(gv == g_pow_x_mod_G(g, (r + x*z) % G_1, G))
+    assert(gv == g_pow_x_mod_G(g, r + x*z, G, debugpow))
     assert(gv == (g_pow_x_mod_G(g, r, G) * g_pow_x_mod_G(g, x*z, G)) % G)
     return (gv, r)
 
@@ -108,14 +114,14 @@ def check_schnorr(g, gv, gx, i, r, G):
     h = sha(','.join(map(str, (g, gv, gx, i))))
     z = memtol(h)
     gr = g_pow_x_mod_G(g, r, G)
-    print "gr=%d;r=%d;z=%d;gv=%d;gx=%d" % (gr,r,z,gv,gx)
+    # print "gr=%d;r=%d;z=%d;gv=%d;gx=%d" % (gr,r,z,gv,gx)
     return gv == ((gr * g_pow_x_mod_G(gx, z, G)) % G)
 
 def sig_cds(g, gx, gxyv, i, G):
-    return 0
+    return (0,0,0,0,0)
 
 def check_cds(g, gx, gxyv, i, G):
-    return true
+    return True
 
 def product(L):
     return reduce(lambda a,b: a*b, L, 1)
@@ -158,7 +164,7 @@ def vote(v, me, n):
     zv = sig_cds(g, gx, gxyv, me, G)
 
     print "round 2, voter %d:" % me
-    print "(0x%x,0x%x)" % (gxyv, zv)
+    print "(0x%x,%r)" % (gxyv, zv)
     (votes, zvs) = ([], [])
     for i in xrange(1, n+1):
         print "voter %d:" % i,
@@ -166,7 +172,7 @@ def vote(v, me, n):
         (gxyvi, zvi) = eval(r)
         votes.append(gxyvi)
         zvs.append(zvi)
-        if not check_zk(zvi):
+        if not check_cds(*zvi):
             die("ZK proof failed to check out: %r" % zvi)
 
     p = product(votes) % G
