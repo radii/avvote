@@ -51,7 +51,7 @@ m = m*m
 for j in (2,3,4,7,8,9,23,56,590,591,592,593,594):
     for i in range(256):
         x = g_pow_x_mod_G(i, j, m)
-        assert x == (i ** j) % m, raise 'x=%d; i=%d; j=%d; m=%d' % (x,i,j,m)
+        assert x == (i ** j) % m, 'x=%d; i=%d; j=%d; m=%d' % (x,i,j,m)
 
 def extended_gcd(a, b):
     x = 0
