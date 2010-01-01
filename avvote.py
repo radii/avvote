@@ -117,10 +117,36 @@ def check_schnorr(g, gv, gx, i, r, G):
     # print "gr=%d;r=%d;z=%d;gv=%d;gx=%d" % (gr,r,z,gv,gx)
     return gv == ((gr * g_pow_x_mod_G(gx, z, G)) % G)
 
-def sig_cds(g, gx, gxyv, i, G):
-    return (0,0,0,0,0)
+def sig_cds(g, xi, v, gy, gxyv, i, G):
+    w = rand(512/8) % G
+    gx = g_pow_x_mod_G(g, xi, G)
+    h = gy
+    x = gx
+    y = gxyv
+    if v:
+        d1 = rand(512/8) % G
+        r1 = rand(512/8) % G
+        a1 = g_pow_x_mod_G(g, r1, G) * g_pow_x_mod_G(x, d1, G) % G
+        b1 = g_pow_x_mod_G(h, r1, G) * g_pow_x_mod_G(y, d1, G) % G
+        a2 = g_pow_x_mod_G(g, w, G)
+        b2 = g_pow_x_mod_G(h, w, G)
+    else:
+        d2 = rand(512/8) % G
+        r2 = rand(512/8) % G
+        a1 = g_pow_x_mod_G(g, w, G)
+        b1 = g_pow_x_mod_G(h, w, G)
+        a2 = g_pow_x_mod_G(g, r2, G) * g_pow_x_mod_G(x, d2, G) % G
+        b2 = g_pow_x_mod_G(h, r2, G) * g_pow_x_mod_G(div(y, g, G), d2, G) % G
+    c = memtol(sha(','.join(map(str, (i,x,y,a1,b1,a2,b2)))))
+    if v:
+        d2 = (c - d1) % G
+        r2 = (w - xi * d2) % G
+    else:
+        d1 = (c - d2) % G
+        r1 = (w - xi * d1) % G
+    return (x,y,a1,b1,a2,b2,c,d1,d2,r1,r2)
 
-def check_cds(g, gx, gxyv, i, G):
+def check_cds(g, G, x, y, a1, b1, a2, b2, c, d1, d2, r1, r2):
     return True
 
 def product(L):
@@ -161,7 +187,7 @@ def vote(v, me, n):
 
     # round 2: fight
     gxyv = (g_pow_x_mod_G(gy, x, G) * g_pow_x_mod_G(g, v, G)) % G
-    zv = sig_cds(g, gx, gxyv, me, G)
+    zv = sig_cds(g, x, v, gy, gxyv, me, G)
 
     print "round 2, voter %d:" % me
     print "(0x%x,%r)" % (gxyv, zv)
@@ -172,7 +198,7 @@ def vote(v, me, n):
         (gxyvi, zvi) = eval(r)
         votes.append(gxyvi)
         zvs.append(zvi)
-        if not check_cds(*zvi):
+        if not check_cds(g, G, *zvi):
             die("ZK proof failed to check out: %r" % zvi)
 
     p = product(votes) % G
