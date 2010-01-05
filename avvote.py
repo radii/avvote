@@ -118,35 +118,55 @@ def check_schnorr(g, gv, gx, i, r, G):
     return gv == ((gr * g_pow_x_mod_G(gx, z, G)) % G)
 
 def sig_cds(g, xi, v, gy, gxyv, i, G):
-    w = rand(512/8) % G
+    G_1 = G - 1
+    w = rand(512/8) % G_1
     gx = g_pow_x_mod_G(g, xi, G)
     h = gy
     x = gx
     y = gxyv
     if v:
-        d1 = rand(512/8) % G
-        r1 = rand(512/8) % G
+        d1 = rand(512/8) % G_1
+        r1 = rand(512/8) % G_1
         a1 = g_pow_x_mod_G(g, r1, G) * g_pow_x_mod_G(x, d1, G) % G
         b1 = g_pow_x_mod_G(h, r1, G) * g_pow_x_mod_G(y, d1, G) % G
         a2 = g_pow_x_mod_G(g, w, G)
         b2 = g_pow_x_mod_G(h, w, G)
     else:
-        d2 = rand(512/8) % G
-        r2 = rand(512/8) % G
+        d2 = rand(512/8) % G_1
+        r2 = rand(512/8) % G_1
         a1 = g_pow_x_mod_G(g, w, G)
         b1 = g_pow_x_mod_G(h, w, G)
         a2 = g_pow_x_mod_G(g, r2, G) * g_pow_x_mod_G(x, d2, G) % G
         b2 = g_pow_x_mod_G(h, r2, G) * g_pow_x_mod_G(div(y, g, G), d2, G) % G
     c = memtol(sha(','.join(map(str, (i,x,y,a1,b1,a2,b2)))))
     if v:
-        d2 = (c - d1) % G
-        r2 = (w - xi * d2) % G
+        d2 = (c - d1) % G_1
+        r2 = (w - xi * d2) % G_1
     else:
-        d1 = (c - d2) % G
-        r1 = (w - xi * d1) % G
+        d1 = (c - d2) % G_1
+        r1 = (w - xi * d1) % G_1
+    print 'from="sig_cds"; xi=%d; gx=%d; c=%d' % (xi, gx, c)
     return (x,y,a1,b1,a2,b2,c,d1,d2,r1,r2)
 
-def check_cds(g, G, x, y, a1, b1, a2, b2, c, d1, d2, r1, r2):
+def check_cds(g, G, gy, x, y, a1, b1, a2, b2, c, d1, d2, r1, r2):
+    G_1 = G-1
+    h = gy
+    if not c == (d1 + d2) % G_1:
+        print 'c=%d; d1=%d; d2=%d' % (c, d1, d2)
+        return False
+    if not a1 == g_pow_x_mod_G(g, r1, G) * g_pow_x_mod_G(x, d1, G) % G:
+        print 'a1=%d; r1=%d; x=%d; d1=%d' % (a1, r1, x, d1)
+        return False
+    if not b1 == g_pow_x_mod_G(h, r1, G) * g_pow_x_mod_G(y, d1, G) % G:
+        print 'b1=%d; h=%d; r1=%d, y=%d; d1=%d' % (b1, h, r1, y, d1)
+        return False
+    if not a2 == g_pow_x_mod_G(g, r2, G) * g_pow_x_mod_G(x, d2, G) % G:
+        print 'a2=%d; r2=%d; d2=%d' % (a2, r2, d2)
+        return False
+    y_g = div(y, g, G)
+    if not b2 == g_pow_x_mod_G(h, r2, G) * g_pow_x_mod_G(y_g, d2, G) % G:
+        print 'b2=%d; h=%d; r2=%d; y_g=%d; d2=%d' % (b2, h, r2, y_g, d2)
+        return False
     return True
 
 def product(L):
@@ -198,8 +218,11 @@ def vote(v, me, n):
         (gxyvi, zvi) = eval(r)
         votes.append(gxyvi)
         zvs.append(zvi)
-        if not check_cds(g, G, *zvi):
-            die("ZK proof failed to check out: %r" % zvi)
+        pgxa = product(gxa[:i-1])
+        pgxb = product(gxa[i:])
+        gy = div(pgxa, pgxb, G)
+        if not check_cds(g, G, gy, *zvi):
+            raise 'ZK proof failed to check out, voter %d' % i
 
     p = product(votes) % G
     for i in xrange(0, n + 3):
